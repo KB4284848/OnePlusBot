@@ -186,6 +186,8 @@ FAQ answers can be embeds, textposts, include images (need to provide an URL) an
 Answers are configurable on a per channel basis.
 If embeds are chosen during configuration it is possible to set a custom color for them.\
 Once changes are made FAQ database need to be reloaded by using `;reloaddb` command (again **Staff** only command).
+
+Note: as of writing editing is not supported, and require firstly deleting command, reloading db, creating db and reloading db again.
     
 Normal users can use `;faq module` to display answer related to the module.
     
@@ -294,6 +296,31 @@ A leaderboard can be seen by using `;leaderboard` command.
 
 # Configuration
 
+## Emotes
+
+You need to setup emotes in seeddata.sql file before trying to execute any command.\
+Otherwise, they won't run as bot needs to have them configured in order to say whether command has been executed successfully or not.
+You need to upload to your server three emotes for `SUCCESS`, `OP_YES` and `OP_NO` keys and replace the IDs in following example by the IDs of the emotes you uploaded previously.
+
+```
+INSERT INTO `Emotes` (`id`, `name`, `emote_key`, `animated`, `emote_id`, `custom`) VALUES
+(2, 'success', 'SUCCESS', 0, 661621119593480231, 1),
+(3, 'OpYes', 'OP_YES', 0, 661621119500943400, 1),
+(4, 'OpNo', 'OP_NO', 0, 661621119614189588, 1),
+(5, '🗞️', 'newspaper', 0, 0, 0),
+(6, '⭐', 'STAR', 0, 0, 0),
+(7, '🌟', 'LVL_2_STAR', 0, 0, 0),
+(8, '💫', 'LVL_3_STAR', 0, 0, 0),
+(9, '💫', 'LVL_4_STAR', 0, 0, 0),
+(10, '⚠️', 'FAIL', 0, 0, 0),
+(11, '📫', 'OPEN_MODMAIL', 0, 0, 0);
+```
+
+## Server and staff role ID
+
+You need to change server and **Staff** role ID in seedata.sql file as otherwise they're null; which disallows you to run any command requiring **Staff** role.
+
+
 ## Post target
 
 Instead of using hardcoded elements, the bot uses configurable targets so that configuration can be changed on the go without requiring a restart but rather only a database reload.\
@@ -319,3 +346,7 @@ It can be done by using `;setposttarget target channel_mention` command.
 | leavelog            	| Channel where leaving logs are posted towards                                      	|
 | info                	| Channel where info post is sent                                                    	|
 | feedback            	| Channel where administrators receive anonymous feedback from users with Staff role 	|
+
+## Channel groups
+
+To complete
