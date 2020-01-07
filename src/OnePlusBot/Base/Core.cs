@@ -112,7 +112,7 @@ namespace OnePlusBot.Base
             var guild = Global.Bot.GetGuild(Global.ServerID);
             var offtopic = guild.GetTextChannel(Global.PostTargets[PostTarget.OFFTOPIC]);
             var Faded = guild.GetUser(167897643131863040);
-            offtopic.SendMessageAsync(Faded.Mention + "Pang Pang Pang! 🎆");
+            offtopic.SendMessageAsync(Faded.Mention + "Did you know there's a helper role?\n You can assign it to yourself via #info and be pinged when others are in need along with a neat colour bonus as a thank you!");
         }
 
         private static void FillReactionActions()
@@ -234,7 +234,7 @@ namespace OnePlusBot.Base
         private static IServiceProvider BuildServices()
         {
             return new ServiceCollection()
-                .AddSingleton(new DiscordSocketClient(new DiscordSocketConfig {MessageCacheSize = 350 }))
+                .AddSingleton(new DiscordSocketClient(new DiscordSocketConfig {MessageCacheSize = 350, AlwaysDownloadUsers = true}))
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<CommandService>()

@@ -18,6 +18,12 @@ namespace OnePlusBot.Modules
 {
     public class Administration : ModuleBase<SocketCommandContext>
     {
+        /// <summary>
+        /// Bans the user by the given id with an optional reason.
+        /// </summary>
+        /// <param name="name">Id of the user to be banned</param>
+        /// <param name="reason">Reason for the ban (optional)</param>
+        /// <returns><see ref="Discord.RuntimeResult"> containing the result of the command</returns>
         [
             Command("banid", RunMode = RunMode.Async),
             Summary("Bans specified user."),
@@ -37,24 +43,13 @@ namespace OnePlusBot.Modules
                 reason = "No reason provided.";
             }
 
-            var modlog = Context.Guild.GetTextChannel(Global.Channels["banlog"]);
             var banMessage = new EmbedBuilder()
             .WithColor(9896005)
             .WithTitle("⛔️ Banned User")
-            .AddField(efb => efb
-                .WithName("UserId")
-                .WithValue(name)
-                .WithIsInline(true))
-            .AddField(efb => efb
-                .WithName("By")
-                .WithValue(Extensions.FormatUserName(Context.User))
-                .WithIsInline(true))
-            .AddField(efb => efb
-                .WithName("Reason")
-                .WithValue(reason))
-            .AddField(efb => efb
-                .WithName("Link")
-                .WithValue(Extensions.GetMessageUrl(Global.ServerID, Context.Channel.Id, Context.Message.Id, "Jump!")));
+            .AddField("UserId", name, true)
+            .AddField("By", Extensions.FormatUserName(Context.User) , true)
+            .AddField("Reason", reason)
+            .AddField("Link", Extensions.FormatLinkWithDisplay("Jump!", Context.Message.GetJumpUrl()));
 
             await banLogChannel.SendMessageAsync(embed: banMessage.Build());
 
@@ -62,6 +57,13 @@ namespace OnePlusBot.Modules
         }
     
 
+        /// <summary>
+        /// Bans the given user with the given reason (default text if none provided). Also sends a direct message to the user containing the reason and the mail used for appeals
+        /// The ban will also be logged in the ban log post target
+        /// </summary>
+        /// <param name="user"><see ref="Discord.IGuildUser"> object of the user to be banned</param>
+        /// <param name="reason">Optional reason for the ban</param>
+        /// <returns><see ref="Discord.RuntimeResult"> containing the result of the command</returns>
         [
             Command("ban", RunMode = RunMode.Async),
             Summary("Bans specified user."),
@@ -95,7 +97,7 @@ namespace OnePlusBot.Modules
                                           "If you believe this to be a mistake, please send an appeal e-mail with all the details to oneplus.appeals@pm.me";
                     await user.SendMessageAsync(string.Format(banDMMessage, reason));
                 } catch (HttpException){
-                    Console.WriteLine("User disabled DMs, unable to send message about ban.");
+                  await Context.Channel.SendMessageAsync("Seems like user disabled DMs, cannot send message about the ban.");
                 }
                
                 await Context.Guild.AddBanAsync(user, 0, reason);
@@ -106,20 +108,10 @@ namespace OnePlusBot.Modules
                 var banlog = new EmbedBuilder()
                 .WithColor(9896005)
                 .WithTitle("⛔️ Banned User")
-                .AddField(efb => efb
-                    .WithName("User")
-                    .WithValue(Extensions.FormatUserNameDetailed(user))
-                    .WithIsInline(true))
-                .AddField(efb => efb
-                    .WithName("By")
-                    .WithValue(Extensions.FormatUserName(Context.User))
-                    .WithIsInline(true))
-                .AddField(efb => efb
-                    .WithName("Reason")
-                    .WithValue(reason))
-                .AddField(efb => efb
-                    .WithName("Link")
-                    .WithValue(Extensions.GetMessageUrl(Global.ServerID, Context.Channel.Id, Context.Message.Id, "Jump!")));
+                .AddField("User", Extensions.FormatUserNameDetailed(user), true)
+                .AddField("By", Extensions.FormatUserName(Context.User), true)
+                .AddField("Reason", reason)
+                .AddField("Link", Extensions.FormatLinkWithDisplay("Jump!", Context.Message.GetJumpUrl()));
 
                 await banLogChannel.SendMessageAsync(embed: banlog.Build());
 
@@ -158,6 +150,7 @@ namespace OnePlusBot.Modules
 
         /// <summary>
         /// Mutes the user for a certain timeperiod (effectively gives the user the two (!) configured roles denying the user the ability to send messages)
+        /// The user receives a message with the reason and the date at which the mute is lifted automatically. The mute is logged in the mutelog posttarget.
         /// </summary>
         /// <param name="user">The <see cref="Discord.IGuildUser"> user to mute</param>
         /// <param name="arguments">Arguments for muting, including: the duration and the reason</param>
@@ -222,7 +215,7 @@ namespace OnePlusBot.Modules
             } 
             catch(HttpException)
             {
-              await Context.Channel.SendMessageAsync("Seems like user disabled the DMs, cannot send message about the mute.");
+              await Context.Channel.SendMessageAsync("Seems like user disabled DMs, cannot send message about the mute.");
             }    
 
             var muteData = new Mute
@@ -330,6 +323,13 @@ namespace OnePlusBot.Modules
             return CustomResult.FromIgnored(); 
         }
 
+        /// <summary>
+        /// Warns the passed user with the given reason. The warning is logged in the database and will get decayed. The user receives a DM
+        /// containing the reason of the warning. The warning will also be logged in the warn log post target
+        /// </summary>
+        /// <param name="user">The <see cref="Discord.IGuildUser"> user to be warned</param>
+        /// <param name="reason">The reason for the warn</param>
+        /// <returns><see ref="Discord.RuntimeResult"> containing the result of the command</returns>
         [
             Command("warn"),
             Summary("Warn someone."),
@@ -342,6 +342,11 @@ namespace OnePlusBot.Modules
             var warningsChannel = Context.Guild.GetTextChannel(Global.PostTargets[PostTarget.WARN_LOG]);
 
             var monitor = Context.Message.Author;
+
+            if(reason == null)
+            {
+                reason = "No reason provided.";
+            }
 
             var entry = new WarnEntry
             {
@@ -357,6 +362,16 @@ namespace OnePlusBot.Modules
             {
                 db.Warnings.Add(entry);
                 db.SaveChanges();
+            }
+
+            try
+            {
+              const string muteMessage = "You were warned on r/OnePlus for the following reason: {0}.";
+              await user.SendMessageAsync(string.Format(muteMessage, reason));
+            }
+            catch(HttpException)
+            {
+              await Context.Channel.SendMessageAsync("Seems like user disabled DMs, cannot send message about the warn.");
             }
 
             var builder = new EmbedBuilder();
@@ -545,8 +560,10 @@ namespace OnePlusBot.Modules
                 {
                     individualWarnings = db.Warnings.Where(x => x.WarnedUserID == requestee.Id && !x.Decayed);
                     var totalWarnings = db.Warnings.Where(x => x.WarnedUserID == requestee.Id);
-
-                    await ReplyAsync($"You have {individualWarnings.Count()} active out of {totalWarnings.Count()} total warnings.");
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(new EmbedAuthorBuilder().WithIconUrl(requestee.GetAvatarUrl()).WithName(requestee.Username + '#' + requestee.Discriminator));
+                    builder.WithDescription($"{requestee.Username + '#' + requestee.Discriminator} has {individualWarnings.Count()} active out of {totalWarnings.Count()} total warnings.");
+                    await ReplyAsync(embed: builder.Build());
 
                     return;
                 }
@@ -700,7 +717,7 @@ namespace OnePlusBot.Modules
         /// <summary>
         /// Creates the post in info responsible for managing the roles
         /// </summary>
-        /// <returns>Task</returns>
+        /// <returns><see ref="Discord.RuntimeResult"> containing the result of the command</returns>
         [
             Command("setupInfoPost"),
             Summary("Sets up the info post to let user self assign the roles"),
@@ -776,6 +793,36 @@ namespace OnePlusBot.Modules
         public async Task<RuntimeResult> SetNicknameTo(IGuildUser user, [Optional]string newNickname)
         {
           await user.ModifyAsync((user) => user.Nickname = newNickname);
+          return CustomResult.FromSuccess();
+        }
+
+        /// <summary>
+        /// Changes the slow mode of the current channel to the given interval, 'off' for disabling slowmode
+        /// </summary>
+        /// <param name="slowModeConfig">Time format with the format 'd', 's', 'm', 'h', 'w'</param>
+        /// <returns><see ref="Discord.RuntimeResult"> containing the result of the command</returns>
+        [
+            Command("slowmode"),
+            Summary("Changes the slowmode configuration of the current channel, 'off' to turn off slowmode"),
+            RequireRole("staff"),
+            CommandDisabledCheck
+        ]
+        public async Task<RuntimeResult> SetSlowModeTo(string slowModeConfig)
+        {
+          var channelObj = Context.Guild.GetTextChannel(Context.Channel.Id);
+          if(slowModeConfig == "off")
+          {
+            await channelObj.ModifyAsync(pro => pro.SlowModeInterval = 0);
+          }
+          else
+          {
+            var span = Extensions.GetTimeSpanFromString(slowModeConfig);
+            if(span > TimeSpan.FromHours(6))
+            {
+              return CustomResult.FromError("Only values between 1 second and 6 hours allowed.");
+            }
+            await channelObj.ModifyAsync(pro => pro.SlowModeInterval = (int) span.TotalSeconds);
+          }
           return CustomResult.FromSuccess();
         }
 
