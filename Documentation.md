@@ -185,11 +185,12 @@ Elements can be added/edited/removed by using `;configurefaq` command (command c
 FAQ answers can be embeds, textposts, include images (need to provide an URL) and have an authorship attached to them following choices made at configuration.\
 Answers are configurable on a per channel basis.
 If embeds are chosen during configuration it is possible to set a custom color for them.\
+Mind that timeout for text configuration is as of writing of 2 minutes for text configuration and of 3 minutes for embeds reaction.
 Once changes are made FAQ database need to be reloaded by using `;reloaddb` command (again **Staff** only command).
 
-Note: as of writing editing is not supported, and require firstly deleting command, reloading db, creating db and reloading db again.
+Editing requires firstly deleting command, reloading db, creating new command and reloading db again.
     
-Normal users can use `;faq module` to display answer related to the module.
+Normal users can use `;faq query` to display answer related to the query.
     
 ### Timeleft
 
